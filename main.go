@@ -8,11 +8,12 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func main() {
 	/*Command line parsing*/
-	urlTarget := flag.String("url", "", "parser target url")
+	urlTarget := flag.String("url", "", "parser target url(without http:// or https://)")
 	classFind := flag.String("class", "", "parsing by some class")
 	idFind := flag.String("id", "", "search by some class")
 	elemFind := flag.String("el", "", "search by element type")
@@ -24,7 +25,6 @@ func main() {
 		return
 	}
 	response := send_get(*urlTarget)
-	//fmt.Println(response)
 	data := parse(response, *classFind, *idFind, *elemFind)
 	saveToFile(*fileToSave, data)
 	fmt.Println(data)
@@ -34,11 +34,12 @@ func main() {
 //Sends get request to target server and returns response
 func send_get(url string) string {
 	fmt.Println("[log]sending get request...")
+	url_arr := strings.SplitN(url, "/", 2)
 	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0"
-	getRequest := "GET / HTTP/1.1\nHost: " //Simple get request.
-	getRequest += url + "\nUser-Agent: " + userAgent + "\n\n"
+	getRequest := "GET /" + url_arr[1] + " HTTP/1.1\nHost: "
+	getRequest += url_arr[0] + "\nUser-Agent: " + userAgent + "\n\n"
 
-	conn, err := net.Dial("tcp", url+":80")
+	conn, err := net.Dial("tcp", url_arr[0]+":80")
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -90,19 +91,20 @@ func parse(data, class, id, elemType string) string {
 	}
 	regular := "<"
 	if elemType != "" {
-		regular += elemType + " "
+		regular += elemType
 	} else {
-		regular += ".+ "
+		regular += ".+"
 	}
-	if class != "" {
-		regular += "class=\"" + class + "\""
 
-		if id != "" {
+	if id != "" {
+		regular += " id=\"" + id + "\""
+
+		if class != "" {
 			regular += " "
 		}
 	}
-	if id != "" {
-		regular += "id=\"" + id + "\""
+	if class != "" {
+		regular += "class=\"" + class + "\""
 	}
 
 	regular += ".*>.*</"
