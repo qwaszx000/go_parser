@@ -36,7 +36,7 @@ func send_get(url string) string {
 	fmt.Println("[log]sending get request...")
 	url_arr := strings.SplitN(url, "/", 2)
 	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0"
-	getRequest := "GET /" + url_arr[1] + " HTTP/1.1\nHost: "
+	getRequest := "GET /" + url_arr[len(url_arr)-1] + " HTTP/1.1\nHost: "
 	getRequest += url_arr[0] + "\nUser-Agent: " + userAgent + "\n\n"
 
 	conn, err := net.Dial("tcp", url_arr[0]+":80")
@@ -89,7 +89,7 @@ func parse(data, class, id, elemType string) string {
 	if data == "" {
 		return "Error: html is empty!"
 	}
-	regular := "<"
+	regular := "(?ims)<"
 	if elemType != "" {
 		regular += elemType
 	} else {
