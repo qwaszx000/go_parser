@@ -1,19 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
-	"net"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
-	"strings"
 )
 
 func main() {
 	/*Command line parsing*/
-	urlTarget := flag.String("url", "", "parser target url(without http:// or https://)")
+	urlTarget := flag.String("url", "", "parser target url(with http:// or https://)")
 	classFind := flag.String("class", "", "parsing by some class")
 	idFind := flag.String("id", "", "search by some class")
 	elemFind := flag.String("el", "", "search by element type")
@@ -33,29 +31,27 @@ func main() {
 
 //Sends get request to target server and returns response
 func send_get(url string) string {
-	fmt.Println("[log]sending get request...")
-	url_arr := strings.SplitN(url, "/", 2)
 	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0"
-	getRequest := "GET /" + url_arr[len(url_arr)-1] + " HTTP/1.1\nHost: "
-	getRequest += url_arr[0] + "\nUser-Agent: " + userAgent + "\n\n"
+	fmt.Println("[log]sending get request...")
 
-	conn, err := net.Dial("tcp", url_arr[0]+":80")
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-	defer conn.Close()
-
-	_, err = conn.Write([]byte(getRequest))
-	if err != nil {
-		fmt.Println(err)
 		panic(err)
 	}
 
-	var buffer bytes.Buffer
-	io.Copy(&buffer, conn)
+	req.Header.Set("User-Agent", userAgent)
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
 
-	return buffer.String()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
 }
 
 //prints help
@@ -89,7 +85,7 @@ func parse(data, class, id, elemType string) string {
 	if data == "" {
 		return "Error: html is empty!"
 	}
-	regular := "(?ims)<"
+	regular := "<"
 	if elemType != "" {
 		regular += elemType
 	} else {
